@@ -1,0 +1,17 @@
+{
+  "name": "it-hub-token-broker",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Stateless GitHub App token-exchange broker for The Company of 1 IT Hub. NOT deployed - requires Owner approval.",
+  "type": "module",
+  "license": "UNLICENSED",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20261106.1",
+    "typescript": "5.9.3",
+    "vitest": "5.1.0"
+  }
+}

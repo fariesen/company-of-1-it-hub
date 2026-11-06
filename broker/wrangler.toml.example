@@ -1,0 +1,16 @@
+# Example Cloudflare Workers configuration for the IT Hub token broker.
+# NOT DEPLOYED. Deploying this requires explicit Owner approval (third-party provider).
+#
+# Copy to wrangler.toml (git-ignored) and set secrets with:
+#   npx wrangler secret put GITHUB_CLIENT_SECRET
+# Never put the client secret in this file.
+
+name = "it-hub-token-broker"
+main = "src/index.ts"
+compatibility_date = "2026-11-01"
+workers_dev = true
+
+[vars]
+GITHUB_CLIENT_ID = "<GitHub App client ID, e.g. Iv23li...>"
+ALLOWED_ORIGIN = "https://fariesen.github.io"
+REDIRECT_URI = "https://fariesen.github.io/company-of-1-it-hub/"

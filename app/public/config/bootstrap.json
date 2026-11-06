@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "bootstrap": {
+    "provider": "github",
+    "owner": "fariesen",
+    "repository": "company-of-1-it",
+    "ref": "main",
+    "path": "config/it-hub.json"
+  },
+  "auth": {
+    "methods": ["fine-grained-token"]
+  }
+}

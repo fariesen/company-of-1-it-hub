@@ -1,0 +1,22 @@
+{
+  "id": "./",
+  "name": "The Company of 1 IT Hub",
+  "short_name": "IT Hub",
+  "description": "Devices, software, infrastructure and setup documentation for The Company of 1.",
+  "start_url": "./#/hub",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0b1416",
+  "theme_color": "#0f766e",
+  "categories": ["business", "productivity", "utilities"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Devices", "url": "./#/hub/devices", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Documentation", "url": "./#/hub/docs", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] }
+  ]
+}
