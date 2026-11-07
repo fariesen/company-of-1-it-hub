@@ -31,7 +31,14 @@ const base = {
   'inventory/ai-computers/AIC-001/DEVICE.md': '# AIC-001',
   'inventory/ai-computers/AIC-001/snapshots/2026-11-01T100000Z.json': snapshot('AIC-001', '2026-11-01T10:00:00Z', [{ name: 'Git', version: '2.50' }]),
   'inventory/ai-computers/AIC-001/snapshots/2026-11-05T100000Z.json': snapshot('AIC-001', '2026-11-05T10:00:00Z', [{ name: 'Git', version: '2.51' }, { name: 'Node.js', version: '24' }]),
-  'inventory/user-computers/UC-001/device.json': device('UC-001', { lifecycle: 'planned' })
+  'inventory/user-computers/UC-001/device.json': device('UC-001', { lifecycle: 'planned' }),
+  'agent/windows/approved-releases.json': JSON.stringify({
+    schemaVersion: 1,
+    releases: [
+      { version: '0.1.1', tag: 'agent-windows-v0.1.1', sha256: 'a'.repeat(64), approvedOn: '2026-11-01' },
+      { version: '0.1.10', tag: 'agent-windows-v0.1.10', sha256: 'b'.repeat(64), approvedOn: '2026-11-02' }
+    ]
+  })
 };
 
 describe('loadHub', () => {
@@ -48,7 +55,60 @@ describe('loadHub', () => {
     expect(data.docs.map((d) => d.path).sort()).toEqual(['README.md', 'setup/README.md', 'setup/profiles/ai-computer.md']);
     expect(data.recentChanges).toHaveLength(1);
     expect(data.agentRelease?.version).toBe('0.1.10');
+    expect(data.agentRelease?.approvedOn).toBe('2026-11-02');
+    expect(data.agentApproval).toMatchObject({ manifest: 'found', listed: 2 });
     expect(data.problems).toEqual([]);
+  });
+
+  it('treats a published release as approved only when it is listed in the approved-release manifest', async () => {
+    const only011 = JSON.stringify({ schemaVersion: 1, releases: [{ version: '0.1.1', tag: 'agent-windows-v0.1.1', sha256: 'a'.repeat(64), approvedOn: '2026-11-01' }] });
+    expect((await loadHub(hub({ ...base, 'agent/windows/approved-releases.json': only011 }).client(), publicBootstrap)).agentRelease?.version).toBe('0.1.1');
+    const empty = await loadHub(hub({ ...base, 'agent/windows/approved-releases.json': '{"schemaVersion":1,"releases":[]}' }).client(), publicBootstrap);
+    expect(empty.agentRelease).toBeUndefined();
+    expect(empty.agentApproval).toMatchObject({ manifest: 'found', listed: 0 });
+    const noManifest = { ...base } as Record<string, string>;
+    delete noManifest['agent/windows/approved-releases.json'];
+    const missing = await loadHub(hub(noManifest).client(), publicBootstrap);
+    expect(missing.agentRelease).toBeUndefined();
+    expect(missing.agentApproval?.manifest).toBe('missing');
+    const bad = await loadHub(hub({ ...base, 'agent/windows/approved-releases.json': JSON.stringify({ schemaVersion: 1, releases: [{ version: '0.1.10', tag: 'agent-windows-v0.1.10', sha256: 'nope' }] }) }).client(), publicBootstrap);
+    expect(bad.agentRelease).toBeUndefined();
+    expect(bad.agentApproval?.manifest).toBe('invalid');
+    expect(bad.problems.map((x) => x.path)).toContain('agent/windows/approved-releases.json');
+  });
+
+  it('shows catalog tags, preferred software and alternatives, read-only recipe summaries and device tags', async () => {
+    const catalog = JSON.stringify({
+      schemaVersion: 1,
+      tags: [{ id: 'development', label: 'Development' }, { id: '3d', label: '3D' }],
+      packages: [
+        { id: 'git', name: 'Git', category: 'development', tags: ['development'], baseline: true, status: 'draft', versionPolicy: { mode: 'minimum', version: '2.40' } },
+        { id: 'blender', name: 'Blender', category: 'engineering-3d', tags: ['3d'], preferred: true, alternatives: ['max'], versionPolicy: { mode: 'latest' } },
+        { id: 'max', name: 'Autodesk 3ds Max', category: 'engineering-3d', tags: ['3d'], versionPolicy: { mode: 'unmanaged' } }
+      ]
+    });
+    const recipe = (over: Record<string, unknown>) => JSON.stringify({ schemaVersion: 1, id: 'git', version: '0.1.0', package: 'git', title: 'Git', status: 'draft', privileges: 'admin', steps: [{ id: 'a', type: 'manual' }, { id: 'b', type: 'winget-install' }], ...over });
+    const cfg = privateConfig({ sources: { inventory: { repository: 'it', path: 'inventory' }, software: { repository: 'it', path: 'software', catalog: 'software/catalog.json' }, setup: { repository: 'it', path: 'setup' }, documentation: [{ id: 'overview', title: 'Overview', repository: 'it', path: 'README.md' }] } });
+    const files = {
+      ...base,
+      'config/it-hub.json': cfg,
+      'software/catalog.json': catalog,
+      'setup/recipes/git.json': recipe({}),
+      'setup/recipes/blender.json': recipe({ id: 'blender', package: 'blender', status: 'approved' }),
+      'setup/recipes/history/git/0.0.9.json': recipe({ version: '0.0.9' }),
+      'inventory/user-computers/UC-001/device.json': device('UC-001', { tags: ['engineering', 'ai', 'Bad Tag'], friendlyName: 'PC1', displayLabel: 'Engineering Laptop' })
+    };
+    const data = await loadHub(hub(files).client(), publicBootstrap);
+    expect(data.catalogTags.map((x) => x.id)).toEqual(['development', '3d']);
+    const git = data.software.find((s) => s.name === 'Git')!;
+    expect(git.standard).toMatchObject({ baseline: true, tags: ['development'], targetVersion: '2.40', status: 'draft' });
+    expect(data.software.find((s) => s.name === 'Blender')!.standard).toMatchObject({ preferred: true, alternatives: ['Autodesk 3ds Max'] });
+    expect(data.recipes.map((r) => `${r.id}:${r.status}`)).toEqual(['blender:needs-revision', 'git:draft']);
+    expect(data.recipes[1]).toMatchObject({ steps: 2, manualSteps: 1, privileges: 'admin' });
+    const uc = data.devices.find((d) => d.id === 'UC-001')!;
+    expect(uc.tags).toEqual(['engineering', 'ai']);
+    expect(uc.friendlyName).toBe('PC1');
+    expect(uc.displayLabel).toBe('Engineering Laptop');
   });
 
   it('refuses to load anything for an account without repository access', async () => {

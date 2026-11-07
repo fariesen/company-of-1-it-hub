@@ -7,11 +7,19 @@ import { docRoute } from '../lib/search';
 import { useHubData } from '../state';
 
 export function Software() {
-  const { software, devices, docs, config } = useHubData();
+  const { software, devices, docs, config, catalogTags } = useHubData();
   const [params, setParams] = useSearchParams();
   const q = params.get('q') ?? '';
   const view = params.get('view') ?? 'all';
-  const shown = useMemo(() => filterSoftware(software, q).filter((s) => view === 'all' || (view === 'standard' ? s.standard : !s.standard)), [software, q, view]);
+  const tag = params.get('tag') ?? '';
+  const tagLabel = new Map(catalogTags.map((t) => [t.id, t.label]));
+  const shown = useMemo(
+    () =>
+      filterSoftware(software, q)
+        .filter((s) => view === 'all' || (view === 'standard' ? s.standard : !s.standard))
+        .filter((s) => !tag || (s.standard?.tags ?? []).includes(tag) || (tag === 'baseline' && s.standard?.baseline)),
+    [software, q, view, tag]
+  );
   const captured = devices.filter((d) => d.snapshot).length;
   const swDocs = config.sources.software ? docs.filter((d) => d.path.startsWith(config.sources.software!.path + '/')) : [];
   const hasCatalog = software.some((s) => s.standard);
@@ -25,7 +33,12 @@ export function Software() {
 
   return (
     <>
-      <PageHead title="Software" description={`Installed software from ${captured} captured device${captured === 1 ? '' : 's'}${hasCatalog ? ', matched against the standard catalog' : ''}.`} />
+      <PageHead title="Software" description={`Installed software from ${captured} captured device${captured === 1 ? '' : 's'}${hasCatalog ? ', matched against the JENOTS catalog' : ''}.`} />
+      {catalogTags.length > 0 && (
+        <p className="subtle" style={{ marginTop: -6 }}>
+          Tags are suggestions for devices, never requirements. Preferred software is highlighted; alternatives stay available. Device-specific suggestions and hardware compatibility are computed by the Windows agent.
+        </p>
+      )}
       {swDocs.length > 0 && (
         <div className="row" style={{ marginBottom: 14 }}>
           {swDocs.map((d) => (
@@ -44,7 +57,7 @@ export function Software() {
           <div className="segmented" role="group" aria-label="Filter">
             {[
               ['all', 'All'],
-              ['standard', 'Standard'],
+              ['standard', 'Catalog'],
               ['other', 'Other']
             ].map(([v, l]) => (
               <button key={v} type="button" aria-pressed={view === v} onClick={() => set('view', v === 'all' ? '' : v!)}>
@@ -54,6 +67,15 @@ export function Software() {
           </div>
         )}
       </div>
+      {catalogTags.length > 0 && (
+        <div className="row" style={{ gap: 6, marginBottom: 14 }} role="group" aria-label="Filter by tag">
+          {[{ id: '', label: 'All tags' }, { id: 'baseline', label: 'Baseline' }, ...catalogTags].map((t) => (
+            <button key={t.id || 'all'} type="button" className="chip" aria-pressed={tag === t.id} onClick={() => set('tag', t.id)}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+      )}
       {software.length === 0 ? (
         <div className="card">
           <Empty icon={Boxes} title="No software records yet">
@@ -90,10 +112,19 @@ export function Software() {
                     <td>
                       {s.name}
                       {s.standard && (
-                        <div>
-                          <Badge tone="accent">Standard{s.standard.targetVersion ? ` · target ${s.standard.targetVersion}` : ''}</Badge>
+                        <div className="row" style={{ gap: 4, marginTop: 4 }}>
+                          <Badge tone="accent">Catalog{s.standard.targetVersion ? ` · approved ${s.standard.targetVersion}` : ''}</Badge>
+                          {s.standard.baseline && <Badge tone="ok">Baseline</Badge>}
+                          {s.standard.preferred && <Badge tone="ok">Preferred</Badge>}
+                          {s.standard.status === 'draft' && <Badge tone="warn" plain>draft</Badge>}
+                          {(s.standard.tags ?? []).map((t) => (
+                            <span key={t} className="chip">
+                              {tagLabel.get(t) ?? t}
+                            </span>
+                          ))}
                         </div>
                       )}
+                      {s.standard?.alternatives && s.standard.alternatives.length > 0 && <div className="subtle">Alternatives: {s.standard.alternatives.join(', ')}</div>}
                     </td>
                     <td>
                       <Value v={s.publisher} />

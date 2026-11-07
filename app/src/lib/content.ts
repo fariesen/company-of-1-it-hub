@@ -28,7 +28,34 @@ export interface SoftwareRecord {
   publisher?: string;
   versions: { version: string; deviceId: string }[];
   deviceIds: string[];
-  standard?: { targetVersion?: string; category?: string; notes?: string };
+  /** Catalog entry (general software facts; never per-device state). */
+  standard?: { targetVersion?: string; category?: string; notes?: string; tags?: string[]; preferred?: boolean; baseline?: boolean; alternatives?: string[]; status?: string };
+}
+
+export interface CatalogTag {
+  id: string;
+  label: string;
+  description?: string;
+}
+
+/** Read-only summary of a setup recipe in the private repository. The PWA never runs recipes. */
+export interface RecipeSummary {
+  id: string;
+  version: string;
+  title: string;
+  status: string;
+  package: string;
+  privileges: string;
+  steps: number;
+  manualSteps: number;
+  path: string;
+}
+
+/** Approved-release manifest state: a GitHub release counts only when it is listed there. */
+export interface AgentApproval {
+  manifest: 'found' | 'missing' | 'invalid';
+  listed: number;
+  path: string;
 }
 
 export interface AgentRelease {
@@ -36,7 +63,10 @@ export interface AgentRelease {
   tag: string;
   publishedAt: string | null;
   url: string;
+  approvedOn?: string;
 }
+
+export const APPROVED_RELEASES_PATH = 'agent/windows/approved-releases.json';
 
 export interface HubData {
   user: GitHubUser;
@@ -48,6 +78,9 @@ export interface HubData {
   software: SoftwareRecord[];
   recentChanges: CommitSummary[];
   agentRelease?: AgentRelease;
+  agentApproval?: AgentApproval;
+  catalogTags: CatalogTag[];
+  recipes: RecipeSummary[];
   problems: ContentProblem[];
   loadedAt: number;
   requestCount: number;
@@ -197,17 +230,37 @@ export async function loadHub(client: GitHubClient, bootstrap: PublicBootstrap, 
 
   // Software: aggregated from agent snapshots, enriched by an optional human-maintained catalog.
   const software = aggregateSoftware(devices);
+  let catalogTags: CatalogTag[] = [];
   const sw = config.sources.software;
   if (sw?.catalog) {
     const entry = trees[sw.repository]!.tree.find((e) => e.type === 'blob' && e.path === sw.catalog);
     if (entry) {
       try {
-        mergeCatalog(software, parseJson(await client.getBlobText(config.repositories[sw.repository]!, entry.sha, entry.path), entry.path), problems, entry.path);
+        catalogTags = mergeCatalog(software, parseJson(await client.getBlobText(config.repositories[sw.repository]!, entry.sha, entry.path), entry.path), problems, entry.path);
       } catch (e) {
         if (!(e instanceof ParseError)) throw e;
         problems.push({ path: entry.path, message: e.message });
       }
     }
+  }
+
+  // Setup recipes (read-only summaries; history versions are not listed).
+  let recipes: RecipeSummary[] = [];
+  const setup = config.sources.setup;
+  if (setup) {
+    const dir = `${setup.path}/recipes/`;
+    const entries = blobs(setup.repository, (e) => e.path.startsWith(dir) && /^[a-z0-9][a-z0-9-]*\.json$/.test(e.path.slice(dir.length))).slice(0, LIMITS.maxDocuments);
+    const parsed = await mapLimit(entries, LIMITS.concurrency, async (entry): Promise<RecipeSummary | null> => {
+      try {
+        if ((entry.size ?? 0) > LIMITS.maxFileBytes) throw new ParseError(`${entry.path} is too large`);
+        return parseRecipeSummary(parseJson(await client.getBlobText(config.repositories[setup.repository]!, entry.sha, entry.path), entry.path), entry.path);
+      } catch (e) {
+        if (!(e instanceof ParseError)) throw e;
+        problems.push({ path: entry.path, message: e.message });
+        return null;
+      }
+    });
+    recipes = parsed.filter((r): r is RecipeSummary => r !== null).sort((a, z) => a.id.localeCompare(z.id));
   }
 
   // Recent inventory changes (Git history is the change log). Failure here is not fatal.
@@ -218,17 +271,34 @@ export async function loadHub(client: GitHubClient, bootstrap: PublicBootstrap, 
     if (isAppError(e) && (e.kind === 'auth-expired' || e.kind === 'no-access')) throw e;
   }
 
-  // Latest approved agent release: published, not draft, not prerelease, tag with configured prefix.
+  // Latest approved agent release, with the same rule as the agent: published, not draft, not
+  // prerelease, tag with the configured prefix AND listed in agent/windows/approved-releases.json.
   let agentRelease: AgentRelease | undefined;
+  let agentApproval: AgentApproval | undefined;
   const aw = config.agent?.windows;
   if (aw && config.features.agentStatus !== false) {
-    try {
-      const releases: Release[] = await client.getReleases(config.repositories[aw.repository]!);
-      const approved = releases.filter((r) => !r.draft && !r.prerelease && r.tag_name.startsWith(aw.releaseTagPrefix));
-      const top = approved.sort((a, z) => compareVersions(z.tag_name.slice(aw.releaseTagPrefix.length), a.tag_name.slice(aw.releaseTagPrefix.length)))[0];
-      if (top) agentRelease = { version: top.tag_name.slice(aw.releaseTagPrefix.length), tag: top.tag_name, publishedAt: top.published_at, url: top.html_url };
-    } catch (e) {
-      if (isAppError(e) && (e.kind === 'auth-expired')) throw e;
+    const manifestEntry = trees[aw.repository]!.tree.find((e) => e.type === 'blob' && e.path === APPROVED_RELEASES_PATH);
+    let listed = new Map<string, string | undefined>();
+    agentApproval = { manifest: 'missing', listed: 0, path: APPROVED_RELEASES_PATH };
+    if (manifestEntry) {
+      try {
+        listed = parseApprovedReleases(parseJson(await client.getBlobText(config.repositories[aw.repository]!, manifestEntry.sha, manifestEntry.path), manifestEntry.path), aw.releaseTagPrefix);
+        agentApproval = { manifest: 'found', listed: listed.size, path: APPROVED_RELEASES_PATH };
+      } catch (e) {
+        if (!(e instanceof ParseError)) throw e;
+        agentApproval = { manifest: 'invalid', listed: 0, path: APPROVED_RELEASES_PATH };
+        problems.push({ path: APPROVED_RELEASES_PATH, message: e.message });
+      }
+    }
+    if (listed.size > 0) {
+      try {
+        const releases: Release[] = await client.getReleases(config.repositories[aw.repository]!);
+        const approved = releases.filter((r) => !r.draft && !r.prerelease && r.tag_name.startsWith(aw.releaseTagPrefix) && listed.has(r.tag_name));
+        const top = approved.sort((a, z) => compareVersions(z.tag_name.slice(aw.releaseTagPrefix.length), a.tag_name.slice(aw.releaseTagPrefix.length)))[0];
+        if (top) agentRelease = { version: top.tag_name.slice(aw.releaseTagPrefix.length), tag: top.tag_name, publishedAt: top.published_at, url: top.html_url, approvedOn: listed.get(top.tag_name) };
+      } catch (e) {
+        if (isAppError(e) && e.kind === 'auth-expired') throw e;
+      }
     }
   }
 
@@ -242,6 +312,9 @@ export async function loadHub(client: GitHubClient, bootstrap: PublicBootstrap, 
     software,
     recentChanges,
     agentRelease,
+    agentApproval,
+    catalogTags,
+    recipes,
     problems,
     loadedAt: Date.now(),
     requestCount: client.requestCount - startCount,
@@ -273,22 +346,74 @@ export function aggregateSoftware(devices: Device[]): SoftwareRecord[] {
   return [...byName.values()].sort((a, z) => a.name.localeCompare(z.name));
 }
 
-function mergeCatalog(software: SoftwareRecord[], json: unknown, problems: ContentProblem[], path: string): void {
-  const root = json as { schemaVersion?: unknown; packages?: unknown };
+const strList = (v: unknown, max = 40): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string' && x.length > 0 && x.length <= 120).slice(0, max) : []);
+
+export function mergeCatalog(software: SoftwareRecord[], json: unknown, problems: ContentProblem[], path: string): CatalogTag[] {
+  const root = json as { schemaVersion?: unknown; packages?: unknown; tags?: unknown };
   if (typeof root !== 'object' || root === null || root.schemaVersion !== 1 || !Array.isArray(root.packages)) {
     problems.push({ path, message: 'Software catalog must have schemaVersion 1 and a "packages" list.' });
-    return;
+    return [];
   }
+  const tags: CatalogTag[] = Array.isArray(root.tags)
+    ? (root.tags as Record<string, unknown>[]).filter((t) => typeof t?.id === 'string' && typeof t?.label === 'string').map((t) => ({ id: t.id as string, label: t.label as string, description: typeof t.description === 'string' ? t.description : undefined }))
+    : [];
+  const names = new Map<string, string>();
+  for (const p of root.packages as Record<string, unknown>[]) if (typeof p?.id === 'string' && typeof p?.name === 'string') names.set(p.id, p.name);
   for (const p of root.packages as Record<string, unknown>[]) {
     if (typeof p?.name !== 'string') continue;
+    const policy = (typeof p.versionPolicy === 'object' && p.versionPolicy !== null ? p.versionPolicy : {}) as Record<string, unknown>;
     const standard = {
-      targetVersion: typeof p.targetVersion === 'string' ? p.targetVersion : undefined,
+      targetVersion: typeof p.targetVersion === 'string' ? p.targetVersion : ['pinned', 'minimum'].includes(policy.mode as string) && typeof policy.version === 'string' ? policy.version : undefined,
       category: typeof p.category === 'string' ? p.category : undefined,
-      notes: typeof p.notes === 'string' ? p.notes : undefined
+      notes: typeof p.notes === 'string' ? p.notes : undefined,
+      tags: strList(p.tags),
+      preferred: p.preferred === true,
+      baseline: p.baseline === true,
+      alternatives: strList(p.alternatives).map((id) => names.get(id) ?? id),
+      status: typeof p.status === 'string' ? p.status : undefined
     };
     const hit = software.find((s) => s.name.toLowerCase() === (p.name as string).toLowerCase());
     if (hit) hit.standard = standard;
     else software.push({ name: p.name, publisher: typeof p.publisher === 'string' ? p.publisher : undefined, versions: [], deviceIds: [], standard });
   }
   software.sort((a, z) => a.name.localeCompare(z.name));
+  return tags;
+}
+
+/** Tags listed in the approved-releases manifest, mapped to their approval date. Throws ParseError when malformed. */
+export function parseApprovedReleases(json: unknown, prefix: string): Map<string, string | undefined> {
+  const root = json as { schemaVersion?: unknown; releases?: unknown };
+  if (typeof root !== 'object' || root === null || root.schemaVersion !== 1 || !Array.isArray(root.releases)) throw new ParseError(`${APPROVED_RELEASES_PATH} must have schemaVersion 1 and a "releases" list`);
+  const out = new Map<string, string | undefined>();
+  for (const r of root.releases as Record<string, unknown>[]) {
+    const version = r?.version, tag = r?.tag, sha = r?.sha256;
+    if (typeof version !== 'string' || !/^\d+\.\d+\.\d+$/.test(version) || tag !== `${prefix}${version}` || typeof sha !== 'string' || !/^[0-9a-f]{64}$/.test(sha)) {
+      throw new ParseError(`${APPROVED_RELEASES_PATH} contains an invalid release entry`);
+    }
+    out.set(tag, typeof r.approvedOn === 'string' ? r.approvedOn : undefined);
+  }
+  return out;
+}
+
+const RECIPE_STATES = ['draft', 'locally-verified', 'approved', 'needs-revision'];
+
+export function parseRecipeSummary(json: unknown, path: string): RecipeSummary {
+  const r = json as Record<string, unknown>;
+  if (typeof r !== 'object' || r === null || r.schemaVersion !== 1) throw new ParseError(`${path}: unsupported recipe`);
+  const id = r.id, version = r.version;
+  if (typeof id !== 'string' || !/^[a-z0-9][a-z0-9-]{1,60}$/.test(id) || typeof version !== 'string' || !/^\d+\.\d+\.\d+$/.test(version)) throw new ParseError(`${path}: recipe needs id and version`);
+  const steps = Array.isArray(r.steps) ? (r.steps as Record<string, unknown>[]) : [];
+  const status = typeof r.status === 'string' && RECIPE_STATES.includes(r.status) ? r.status : 'unknown';
+  return {
+    id,
+    version,
+    title: typeof r.title === 'string' ? r.title.slice(0, 120) : id,
+    // "approved" without an approval record is not shown as approved.
+    status: status === 'approved' && (typeof r.approval !== 'object' || r.approval === null) ? 'needs-revision' : status,
+    package: typeof r.package === 'string' ? r.package : 'unknown',
+    privileges: r.privileges === 'admin' ? 'admin' : 'user',
+    steps: steps.length,
+    manualSteps: steps.filter((s) => s?.type === 'manual').length,
+    path
+  };
 }

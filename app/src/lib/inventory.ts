@@ -37,6 +37,11 @@ export interface DeviceRecord {
   assignedTo?: string;
   location?: string;
   setupProfile?: string;
+  friendlyName?: string;
+  displayLabel?: string;
+  deviceClass?: string;
+  /** Recommendation tags (suggestions only). */
+  tags: string[];
   hardware: DeclaredHardware;
   agentEnabled: boolean;
   identityHash?: string;
@@ -110,6 +115,10 @@ export function parseDeviceRecord(json: unknown, supported: readonly number[] = 
     assignedTo: text(json.assignedTo, 120),
     location: text(json.location, 120),
     setupProfile: text(json.setupProfile, 80),
+    friendlyName: text(json.friendlyName, 60),
+    displayLabel: text(json.displayLabel, 80),
+    deviceClass: text(json.deviceClass, 41),
+    tags: Array.isArray(json.tags) ? json.tags.filter((t): t is string => typeof t === 'string' && /^[a-z0-9][a-z0-9-]{0,30}$/.test(t)).slice(0, 20) : [],
     hardware: {
       manufacturer: textOrUnknown(hw.manufacturer),
       model: textOrUnknown(hw.model),

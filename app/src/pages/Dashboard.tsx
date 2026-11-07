@@ -157,7 +157,7 @@ export function Dashboard() {
           </div>
           <dl className="kv">
             <dt>Latest approved release</dt>
-            <dd>{data.agentRelease ? <Badge tone="ok">v{data.agentRelease.version}</Badge> : <span className="unknown">none published yet</span>}</dd>
+            <dd>{data.agentRelease ? <Badge tone="ok">v{data.agentRelease.version}</Badge> : <span className="unknown">{data.agentApproval?.manifest === 'found' ? 'none approved yet' : data.agentApproval?.manifest === 'invalid' ? 'approved-release list is invalid' : 'no approved-release list'}</span>}</dd>
             <dt>Devices with agent</dt>
             <dd>
               {agentDevices.length} of {devices.length}

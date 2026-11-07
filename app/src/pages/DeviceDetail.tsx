@@ -136,6 +136,24 @@ export function DeviceDetail() {
                 <dd>{device.location}</dd>
               </>
             )}
+            <dt>Labels</dt>
+            <dd>
+              {device.friendlyName || device.displayLabel ? [device.friendlyName, device.displayLabel].filter(Boolean).join(' · ') : <span className="unknown">none</span>}
+            </dd>
+            <dt>Tags</dt>
+            <dd>
+              {device.tags.length ? (
+                <span className="row" style={{ gap: 4 }}>
+                  {device.tags.map((t) => (
+                    <span key={t} className="chip">
+                      {t}
+                    </span>
+                  ))}
+                </span>
+              ) : (
+                <span className="unknown">none (suggestions use the baseline only)</span>
+              )}
+            </dd>
             <dt>Setup profile</dt>
             <dd>
               <Value v={device.setupProfile} />

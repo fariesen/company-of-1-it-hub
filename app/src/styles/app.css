@@ -228,6 +228,8 @@ label.check input { margin-top: 4px; width: 18px; height: 18px; accent-color: va
 .badge.bad { background: var(--bad-soft); color: var(--bad); }
 .badge.info { background: var(--info-soft); color: var(--info); }
 .badge.accent { background: var(--accent-soft); color: var(--accent-strong); }
+button.chip { cursor: pointer; }
+button.chip[aria-pressed='true'] { background: var(--accent); border-color: var(--accent); color: #fff; }
 .chip { display: inline-block; padding: 1px 8px; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--border); font-size: 0.78rem; color: var(--text-2); font-family: var(--mono); }
 
 /* ---------- Lists & tables ---------- */
