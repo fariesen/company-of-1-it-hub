@@ -1,6 +1,6 @@
-import { FileText, Network, Wrench } from 'lucide-react';
+import { FileText, ListChecks, Network, Wrench } from 'lucide-react';
 import { DocView } from '../components/DocView';
-import { Callout, Empty, PageHead } from '../components/ui';
+import { Badge, Callout, Empty, PageHead } from '../components/ui';
 import { isUnder } from '../lib/paths';
 import { docRoute } from '../lib/search';
 import { useHubData } from '../state';
@@ -14,7 +14,7 @@ const META = {
   setup: {
     title: 'Setup',
     icon: Wrench,
-    description: 'Setup guides, device setup profiles and installation scripts for new computers.'
+    description: 'Setup recipes, guides and learning-mode documentation for new computers. Recipes are planned and verified by the Windows agent; the IT Hub only shows them.'
   }
 } as const;
 
@@ -66,7 +66,7 @@ export function SectionDocs({ section }: { section: 'infrastructure' | 'setup' }
             )}
             {profiles.length > 0 && (
               <section className="card">
-                <h2>Setup profiles</h2>
+                <h2>Setup profiles (deprecated, replaced by device tags)</h2>
                 <ul className="list">
                   {profiles.map((d) => (
                     <li key={d.key}>
@@ -83,6 +83,29 @@ export function SectionDocs({ section }: { section: 'infrastructure' | 'setup' }
               </section>
             )}
           </div>
+        )}
+        {section === 'setup' && data.recipes.length > 0 && (
+          <section className="card">
+            <h2>Setup recipes</h2>
+            <ul className="list">
+              {data.recipes.map((r) => (
+                <li key={r.path}>
+                  <div className="list-item">
+                    <ListChecks size={16} aria-hidden="true" />
+                    <div className="grow">
+                      <div className="t">
+                        {r.title} <span className="mono subtle">{r.id} {r.version}</span>
+                      </div>
+                      <div className="s">
+                        {r.steps} steps{r.manualSteps ? `, ${r.manualSteps} manual` : ''} · {r.privileges === 'admin' ? 'needs admin rights' : 'user rights'} · package {r.package}
+                      </div>
+                    </div>
+                    <Badge tone={r.status === 'approved' ? 'ok' : r.status === 'needs-revision' ? 'bad' : r.status === 'locally-verified' ? 'accent' : 'warn'}>{r.status}</Badge>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </section>
         )}
         {readme ? (
           <section className="card">

@@ -15,6 +15,8 @@ import { Settings } from './pages/Settings';
 import { More } from './pages/More';
 
 const NotFound = lazy(() => import('./pages/NotFound'));
+const SoftwareDetail = lazy(() => import('./pages/SoftwareDetail').then((m) => ({ default: m.SoftwareDetail })));
+const Onboarding = lazy(() => import('./pages/Onboarding').then((m) => ({ default: m.Onboarding })));
 
 export function App() {
   return (
@@ -28,6 +30,8 @@ export function App() {
               <Route path="devices" element={<Devices />} />
               <Route path="devices/:id" element={<DeviceDetail />} />
               <Route path="software" element={<Software />} />
+              <Route path="software/:id" element={<SoftwareDetail />} />
+              <Route path="setup-pc" element={<Onboarding />} />
               <Route path="infrastructure" element={<SectionDocs section="infrastructure" />} />
               <Route path="setup" element={<SectionDocs section="setup" />} />
               <Route path="docs" element={<Docs />} />

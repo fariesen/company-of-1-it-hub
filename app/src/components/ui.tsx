@@ -1,5 +1,5 @@
-import { AlertTriangle, Info, RefreshCw, ShieldAlert, WifiOff, type LucideIcon } from 'lucide-react';
-import { useId, type ReactNode } from 'react';
+import { AlertTriangle, Check, Copy, Info, RefreshCw, ShieldAlert, WifiOff, type LucideIcon } from 'lucide-react';
+import { useId, useState, type ReactNode } from 'react';
 import { errorTitles, type AppError } from '../lib/errors';
 import { UNKNOWN, type Lifecycle } from '../lib/inventory';
 
@@ -129,6 +129,30 @@ export function timeAgo(iso: string | number | undefined | null, now = Date.now(
   let div = 60;
   for (const [sec, u] of units) if (s >= sec) [div, unit] = [sec, u];
   return rtf.format(-Math.round(s / div), unit);
+}
+
+/** Command or text shown for review, with a copy button. The IT Hub never runs it. */
+export function CodeBlock({ code, label = 'Copy' }: { code: string; label?: string }) {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      setCopied(false);
+    }
+  };
+  return (
+    <div className="code-block">
+      <pre>
+        <code>{code}</code>
+      </pre>
+      <button type="button" className="btn btn-sm code-copy" onClick={copy} aria-label={`${label}: ${code.slice(0, 40)}`}>
+        {copied ? <Check size={14} aria-hidden="true" /> : <Copy size={14} aria-hidden="true" />} {copied ? 'Copied' : label}
+      </button>
+    </div>
+  );
 }
 
 export function PageHead({ title, description, actions }: { title: string; description?: ReactNode; actions?: ReactNode }) {

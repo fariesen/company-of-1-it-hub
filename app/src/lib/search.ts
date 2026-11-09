@@ -93,7 +93,8 @@ export function searchAll(data: HubData, query: string, limit = 30): SearchHit[]
   }
   for (const s of data.software) {
     const score = scoreFields([s.name, s.publisher], terms);
-    if (score > 0) hits.push({ kind: 'software', id: s.name, title: s.name, subtitle: `${s.deviceIds.length} device(s)`, route: `#/hub/software?q=${encodeURIComponent(s.name)}`, score });
+    const route = s.standard?.id ? `#/hub/software/${encodeURIComponent(s.standard.id)}` : `#/hub/software?q=${encodeURIComponent(s.name)}`;
+    if (score > 0) hits.push({ kind: 'software', id: s.name, title: s.name, subtitle: `${s.deviceIds.length} device(s)`, route, score });
   }
   for (const doc of data.docs) {
     const text = markdownToText(doc.content);

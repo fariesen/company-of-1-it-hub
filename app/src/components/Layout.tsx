@@ -1,4 +1,4 @@
-import { BookOpen, Boxes, Cpu, Ellipsis, LayoutDashboard, LogOut, Network, RefreshCw, Search as SearchIcon, Settings as SettingsIcon, Wrench } from 'lucide-react';
+import { BookOpen, Boxes, Cpu, Ellipsis, LayoutDashboard, LogOut, MonitorDown, Network, RefreshCw, Search as SearchIcon, Settings as SettingsIcon, Wrench } from 'lucide-react';
 import { useEffect, useSyncExternalStore } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { applyUpdate, pwaState, subscribePwa } from '../lib/pwa';
@@ -12,7 +12,8 @@ const NAV = [
   { to: '/hub/software', label: 'Software', icon: Boxes },
   { to: '/hub/infrastructure', label: 'Infrastructure', icon: Network },
   { to: '/hub/docs', label: 'Documentation', icon: BookOpen },
-  { to: '/hub/setup', label: 'Setup', icon: Wrench }
+  { to: '/hub/setup', label: 'Setup', icon: Wrench },
+  { to: '/hub/setup-pc', label: 'Set up a PC', icon: MonitorDown }
 ];
 
 const TABS = [

@@ -151,13 +151,13 @@ export function Dashboard() {
             <h2>
               <MonitorDown size={17} aria-hidden="true" /> Windows agent
             </h2>
-            <Link to="/hub/settings#agent" className="subtle">
-              Install
+            <Link to="/hub/setup-pc" className="subtle">
+              Set up a PC
             </Link>
           </div>
           <dl className="kv">
             <dt>Latest approved release</dt>
-            <dd>{data.agentRelease ? <Badge tone="ok">v{data.agentRelease.version}</Badge> : <span className="unknown">none published yet</span>}</dd>
+            <dd>{data.agentRelease ? <Badge tone="ok">v{data.agentRelease.version}</Badge> : <span className="unknown">{data.agentApproval?.manifest === 'found' ? 'none approved yet' : data.agentApproval?.manifest === 'invalid' ? 'approved-release list is invalid' : 'no approved-release list'}</span>}</dd>
             <dt>Devices with agent</dt>
             <dd>
               {agentDevices.length} of {devices.length}

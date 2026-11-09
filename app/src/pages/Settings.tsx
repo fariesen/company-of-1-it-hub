@@ -167,9 +167,14 @@ export function Settings() {
           ) : (
             <>
               <p className="muted">
-                The inventory agent is a separate Windows tool. It reads hardware and installed software and proposes inventory updates as pull requests. It is not part of
-                this app and is not installed by installing the IT Hub.
+                The JENOTS Windows agent is a separate tool. It reads hardware and installed software, suggests software, plans setup recipes and imports learning sessions,
+                and proposes inventory updates only after review. It is not part of this app and is not installed by installing the IT Hub. IT Hub links can open it (optional{' '}
+                <span className="mono">ithub://</span> handler), but it always shows what it will do and asks locally; the browser never runs commands. Every start of the agent checks for
+                an approved update and asks before installing it.
               </p>
+              <a className="btn btn-sm" href="#/hub/setup-pc" style={{ marginBottom: 12 }}>
+                Set up a new PC (download, install, register)
+              </a>
               <dl className="kv">
                 <dt>Latest approved release</dt>
                 <dd>
@@ -178,11 +183,16 @@ export function Settings() {
                       v{data.agentRelease.version}
                     </a>
                   ) : (
-                    <span className="unknown">none published yet</span>
+                    <span className="unknown">{data.agentApproval?.manifest === 'found' ? 'none approved yet' : 'no approved-release list found'}</span>
                   )}
                 </dd>
+                <dt>Approved-release list</dt>
+                <dd>
+                  <span className="mono">{data.agentApproval?.path ?? 'agent/windows/approved-releases.json'}</span>{' '}
+                  {data.agentApproval?.manifest === 'found' ? `(${data.agentApproval.listed} listed)` : data.agentApproval?.manifest === 'invalid' ? '(invalid - no release is trusted)' : '(missing - no release is trusted)'}
+                </dd>
               </dl>
-              <p style={{ marginTop: 12, marginBottom: 6, fontWeight: 600 }}>Install (Windows PowerShell, signed in with GitHub CLI):</p>
+              <p style={{ marginTop: 12, marginBottom: 6, fontWeight: 600 }}>Alternative for PCs with GitHub CLI (Windows PowerShell, signed in with gh):</p>
               <pre className="prose" style={{ margin: 0 }}>
                 <code>
                   {`gh auth status

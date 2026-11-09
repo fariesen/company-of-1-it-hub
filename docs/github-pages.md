@@ -1,6 +1,6 @@
 # GitHub Pages
 
-Version 0.1 · 2026-11-06 · Status: workflow IMPLEMENTED · NOT DEPLOYED (REQUIRES APPROVAL)
+Version 0.2 · 2026-11-09 · Status: workflow IMPLEMENTED, TESTED: deployed on GitHub Pages from main 5b4a213 (deployments 2026-11-06 16:24 and 16:45 UTC; https://fariesen.github.io/company-of-1-it-hub/ answered HTTP 200 on 2026-11-08) · every push to main redeploys
 
 Target URL (after deployment): **https://fariesen.github.io/company-of-1-it-hub/**
 

@@ -1,6 +1,6 @@
 # Architecture
 
-Version 0.1 · 2026-11-06 · Status: IMPLEMENTED (PWA, agent, broker code) · NOT DEPLOYED
+Version 0.2 · 2026-11-09 · Status: IMPLEMENTED (PWA, agent, broker code) · PWA main deployed on GitHub Pages from main 5b4a213 (deployments 2026-11-06 16:24 and 16:45 UTC; https://fariesen.github.io/company-of-1-it-hub/ answered HTTP 200 on 2026-11-08) · broker NOT DEPLOYED
 
 ## Overview
 
@@ -89,4 +89,4 @@ Version 0.1 · 2026-11-06 · Status: IMPLEMENTED (PWA, agent, broker code) · NO
 | Repository | Visibility | Contents |
 |---|---|---|
 | `fariesen/company-of-1-it` | private | Inventory, docs, private config, schemas, Windows agent, agent releases, validation workflows |
-| `fariesen/company-of-1-it-hub` | public (proposed, not created) | PWA, broker source, public docs, Pages workflow |
+| `fariesen/company-of-1-it-hub` | public (created 2026-11-06) | PWA, broker source, public docs, Pages workflow |
