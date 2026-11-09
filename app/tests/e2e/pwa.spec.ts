@@ -3,7 +3,12 @@
  * GitHub Pages project path. GitHub's API is replaced by a route handler: these tests prove the
  * app's behaviour, not that real GitHub sign-in works.
  */
+import { readFileSync } from 'node:fs';
 import { expect, test, type Page, type Route } from '@playwright/test';
+
+// The landing page shows the app version from package.json; read it instead of hard-coding it.
+const APP_VERSION: string = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url), 'utf8')).version;
+const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const TOKEN = 'github_pat_E2E_0123456789abcdefghijklmnopqrstu';
 const enc = (s: string) => Buffer.from(s).toString('utf8');
@@ -78,7 +83,7 @@ test('landing page renders under the GitHub Pages sub-path with install instruct
   await expect(page.getByRole('heading', { name: /every device, guide and setup step/i })).toBeVisible();
   await page.getByRole('tab', { name: /iPhone/ }).click();
   await expect(page.getByText(/Add to Home Screen/).first()).toBeVisible();
-  await expect(page.getByText(/Version 0\.1\.0/)).toBeVisible();
+  await expect(page.getByText(new RegExp(`Version ${escapeRegExp(APP_VERSION)}`))).toBeVisible();
   expect(errors).toEqual([]);
 });
 
