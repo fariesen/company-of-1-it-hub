@@ -2,9 +2,12 @@ import { ArrowLeft, BookOpen, Boxes, Cpu, ExternalLink, FileText, HardDrive, Inf
 import { useMemo, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import { Badge, Callout, Empty, formatDate, LifecycleBadge, PageHead, timeAgo, Value } from '../components/ui';
+import { checkVersion, matchCatalogPackage, type VersionCheck } from '../lib/catalog';
 import { categoryLabels, displayHardware, snapshotAgeDays, UNKNOWN } from '../lib/inventory';
 import { docRoute, normalise } from '../lib/search';
 import { useHubData } from '../state';
+
+const versionTone: Record<VersionCheck, string> = { ok: 'ok', differs: 'warn', unknown: '', unmanaged: '' };
 
 function HardwareRow({ label, v }: { label: string; v: { declared: string; observed?: string } }) {
   const differs = v.observed && v.observed !== UNKNOWN && v.declared !== UNKNOWN && normalise(v.observed) !== normalise(v.declared);
@@ -42,15 +45,27 @@ export function DeviceDetail() {
   const { id = '' } = useParams();
   const data = useHubData();
   const [swQuery, setSwQuery] = useState('');
+  const [swView, setSwView] = useState<'all' | 'catalog' | 'differs'>('all');
   const key = id.toLowerCase();
   const device = data.devices.find((d) => d.id.toLowerCase() === key);
   const byAlias = device ? undefined : data.devices.find((d) => d.aliases.some((a) => a.toLowerCase() === key));
 
+  const matched = useMemo(
+    () =>
+      (device?.snapshot?.software ?? []).map((s) => {
+        const pkg = matchCatalogPackage(s.name, data.catalog);
+        return { ...s, pkg, check: pkg ? checkVersion(s.version, pkg) : undefined };
+      }),
+    [device, data.catalog]
+  );
   const software = useMemo(() => {
-    const list = device?.snapshot?.software ?? [];
     const q = normalise(swQuery);
-    return q ? list.filter((s) => normalise(`${s.name} ${s.publisher ?? ''}`).includes(q)) : list;
-  }, [device, swQuery]);
+    return matched
+      .filter((s) => !q || normalise(`${s.name} ${s.publisher ?? ''}`).includes(q))
+      .filter((s) => swView === 'all' || (swView === 'catalog' ? s.pkg : s.check === 'differs'));
+  }, [matched, swQuery, swView]);
+  const catalogCount = matched.filter((s) => s.pkg).length;
+  const differCount = matched.filter((s) => s.check === 'differs').length;
 
   if (byAlias) return <Navigate to={`/hub/devices/${encodeURIComponent(byAlias.id)}`} replace />;
   if (!device) {
@@ -263,6 +278,21 @@ export function DeviceDetail() {
               <SearchIcon size={17} aria-hidden="true" />
               <input className="input input-search" type="search" placeholder="Filter software" value={swQuery} onChange={(e) => setSwQuery(e.target.value)} aria-label="Filter software" />
             </div>
+            {data.catalog.length > 0 && (
+              <div className="segmented" role="group" aria-label="Catalog filter" style={{ marginBottom: 12 }}>
+                {(
+                  [
+                    ['all', `All (${matched.length})`],
+                    ['catalog', `Catalog only (${catalogCount})`],
+                    ['differs', `Differs from policy (${differCount})`]
+                  ] as const
+                ).map(([v, l]) => (
+                  <button key={v} type="button" aria-pressed={swView === v} onClick={() => setSwView(v)}>
+                    {l}
+                  </button>
+                ))}
+              </div>
+            )}
             {software.length === 0 ? (
               <p className="subtle">No matching software.</p>
             ) : (
@@ -273,6 +303,7 @@ export function DeviceDetail() {
                       <th>Name</th>
                       <th>Version</th>
                       <th>Publisher</th>
+                      <th>Catalog</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -284,6 +315,25 @@ export function DeviceDetail() {
                         </td>
                         <td>
                           <Value v={p.publisher} />
+                        </td>
+                        <td>
+                          {p.pkg ? (
+                            <span className="row" style={{ gap: 4 }}>
+                              <Link to={`/hub/software/${encodeURIComponent(p.pkg.id)}`}>{p.pkg.name}</Link>
+                              {p.pkg.status && (
+                                <Badge tone={p.pkg.status === 'approved' ? 'ok' : 'warn'} plain>
+                                  {p.pkg.status}
+                                </Badge>
+                              )}
+                              {p.check && p.check !== 'unmanaged' && (
+                                <Badge tone={versionTone[p.check]} plain>
+                                  {p.check === 'ok' ? `ok (${p.pkg.targetVersion})` : p.check === 'differs' ? `policy ${p.pkg.versionPolicy?.mode} ${p.pkg.targetVersion}` : 'version unknown'}
+                                </Badge>
+                              )}
+                            </span>
+                          ) : (
+                            <span className="subtle">not in catalog</span>
+                          )}
                         </td>
                       </tr>
                     ))}

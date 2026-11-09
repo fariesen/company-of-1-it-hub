@@ -1,7 +1,7 @@
 {
   "name": "company-of-1-it-hub",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.4.7",
   "type": "module",
   "description": "The Company of 1 - IT Hub (installable PWA, GitHub-backed)",
   "license": "UNLICENSED",

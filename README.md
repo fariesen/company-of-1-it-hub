@@ -1,6 +1,6 @@
 # The Company of 1 - IT Hub
 
-Version 0.1 · 2026-11-06 · Status: IMPLEMENTED and TESTED locally · NOT DEPLOYED · production sign-in REQUIRES APPROVAL
+Version 0.4.7 · 2026-11-09 · Status: IMPLEMENTED and TESTED locally · main (0.1) DEPLOYED on GitHub Pages; 0.4.7 on branch feature/dashboard-0.4.7, NOT DEPLOYED · production sign-in REQUIRES APPROVAL
 
 An installable Progressive Web App (PWA) for the IT department of The Company of 1. It shows
 devices, software, infrastructure, setup guides and documentation. All of this is read **at
@@ -18,8 +18,9 @@ data, internal documentation, credentials or network details.
 | `app/` | React + TypeScript + Vite PWA (GitHub Pages compatible) | IMPLEMENTED, TESTED |
 | `app/public/config/bootstrap.json` | Public stage-1 locator of the private configuration | IMPLEMENTED |
 | `broker/` | Stateless token-exchange function for GitHub App sign-in | IMPLEMENTED, unit-TESTED, **not deployed: REQUIRES APPROVAL** |
-| `.github/workflows/ci.yml` | Typecheck, lint, tests, build, public-build scan | IMPLEMENTED (not yet run on GitHub) |
-| `.github/workflows/pages.yml` | GitHub Pages deployment | IMPLEMENTED (not yet run on GitHub) |
+| `.github/workflows/ci.yml` | Typecheck, lint, tests, build, public-build scan | IMPLEMENTED, TESTED on GitHub (push to main succeeded 2026-11-06; Dependabot PR runs; PR #2 TypeScript 7 fails as expected, see docs/development.md) |
+| `.github/workflows/pages.yml` | GitHub Pages deployment | IMPLEMENTED, TESTED: deployed from main 5b4a213 (deployments 2026-11-06 16:24 and 16:45 UTC; the site answered HTTP 200 on 2026-11-08) |
+| Software detail pages, new-PC setup, agent hand-off (0.4.7) | [docs/software-knowledge.md](docs/software-knowledge.md) | IMPLEMENTED, TESTED with the fake GitHub API; NOT DEPLOYED |
 | `docs/` | Documentation (this set) | IMPLEMENTED |
 
 The Windows inventory agent, the data schemas and the private configuration live in the
@@ -57,6 +58,7 @@ npm run typecheck && npm run lint && npm test && npm run build && npm run check:
 | Bootstrap configuration (public + private) | [docs/bootstrap-configuration.md](docs/bootstrap-configuration.md) |
 | Installing the PWA | [docs/pwa-installation.md](docs/pwa-installation.md) |
 | Windows inventory agent | [docs/windows-agent.md](docs/windows-agent.md) |
+| Software knowledge, new-PC setup, agent hand-off (0.4.7) | [docs/software-knowledge.md](docs/software-knowledge.md) |
 | Agent updates | [docs/agent-updates.md](docs/agent-updates.md) |
 | Inventory schema and field ownership | [docs/inventory-schema.md](docs/inventory-schema.md) |
 | Development | [docs/development.md](docs/development.md) |

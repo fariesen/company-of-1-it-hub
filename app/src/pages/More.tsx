@@ -1,4 +1,4 @@
-import { Boxes, ChevronRight, LogOut, Network, Settings as SettingsIcon, Wrench } from 'lucide-react';
+import { Boxes, ChevronRight, LogOut, MonitorDown, Network, Settings as SettingsIcon, Wrench } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { PageHead } from '../components/ui';
 import { useHub } from '../state';
@@ -7,6 +7,7 @@ const ITEMS = [
   { to: '/hub/software', label: 'Software', icon: Boxes },
   { to: '/hub/infrastructure', label: 'Infrastructure', icon: Network },
   { to: '/hub/setup', label: 'Setup', icon: Wrench },
+  { to: '/hub/setup-pc', label: 'Set up a PC', icon: MonitorDown },
   { to: '/hub/settings', label: 'Settings', icon: SettingsIcon }
 ];
 

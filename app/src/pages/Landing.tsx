@@ -275,8 +275,8 @@ export function Landing() {
             <div style={{ flex: 1, minWidth: 220 }}>
               <h2>Windows inventory agent</h2>
               <p className="muted" style={{ margin: 0 }}>
-                An optional, separate tool for Windows PCs. It reads hardware and installed software and proposes inventory updates as GitHub pull requests for review.
-                It is distributed from the private repository; after sign-in, see Settings &rarr; Windows agent.
+                An optional, separate tool for Windows PCs. It reads hardware and installed software, registers the PC and uploads its inventory only after you confirm.
+                It is distributed from the private repository; after sign-in, see <a href="#/hub/setup-pc">Set up a PC</a>. Git, GitHub CLI and Claude Code are not required.
               </p>
             </div>
           </div>

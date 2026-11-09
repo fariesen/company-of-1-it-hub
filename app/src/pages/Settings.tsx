@@ -168,9 +168,13 @@ export function Settings() {
             <>
               <p className="muted">
                 The JENOTS Windows agent is a separate tool. It reads hardware and installed software, suggests software, plans setup recipes and imports learning sessions,
-                and proposes inventory updates only after review. It is not part of this app, is not installed by installing the IT Hub, and cannot be controlled from the
-                browser. Every start of the agent checks for an approved update and asks before installing it.
+                and proposes inventory updates only after review. It is not part of this app and is not installed by installing the IT Hub. IT Hub links can open it (optional{' '}
+                <span className="mono">ithub://</span> handler), but it always shows what it will do and asks locally; the browser never runs commands. Every start of the agent checks for
+                an approved update and asks before installing it.
               </p>
+              <a className="btn btn-sm" href="#/hub/setup-pc" style={{ marginBottom: 12 }}>
+                Set up a new PC (download, install, register)
+              </a>
               <dl className="kv">
                 <dt>Latest approved release</dt>
                 <dd>
@@ -188,7 +192,7 @@ export function Settings() {
                   {data.agentApproval?.manifest === 'found' ? `(${data.agentApproval.listed} listed)` : data.agentApproval?.manifest === 'invalid' ? '(invalid - no release is trusted)' : '(missing - no release is trusted)'}
                 </dd>
               </dl>
-              <p style={{ marginTop: 12, marginBottom: 6, fontWeight: 600 }}>Install (Windows PowerShell, signed in with GitHub CLI):</p>
+              <p style={{ marginTop: 12, marginBottom: 6, fontWeight: 600 }}>Alternative for PCs with GitHub CLI (Windows PowerShell, signed in with gh):</p>
               <pre className="prose" style={{ margin: 0 }}>
                 <code>
                   {`gh auth status

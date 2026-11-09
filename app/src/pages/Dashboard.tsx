@@ -151,8 +151,8 @@ export function Dashboard() {
             <h2>
               <MonitorDown size={17} aria-hidden="true" /> Windows agent
             </h2>
-            <Link to="/hub/settings#agent" className="subtle">
-              Install
+            <Link to="/hub/setup-pc" className="subtle">
+              Set up a PC
             </Link>
           </div>
           <dl className="kv">

@@ -313,6 +313,12 @@ table.data td a { font-weight: 650; }
 .prose code { background: var(--surface-2); border: 1px solid var(--border); padding: 0.1em 0.35em; border-radius: 5px; }
 .prose pre { background: var(--surface-2); border: 1px solid var(--border); padding: 14px 16px; border-radius: 10px; overflow-x: auto; line-height: 1.5; }
 .prose pre code { background: none; border: 0; padding: 0; }
+.code-block { position: relative; margin: 6px 0 10px; }
+.code-block pre { margin: 0; background: var(--surface-2); border: 1px solid var(--border); padding: 12px 14px; padding-right: 92px; border-radius: 10px; overflow-x: auto; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
+.code-block .code-copy { position: absolute; top: 6px; right: 6px; }
+.step-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.step-list > li { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; }
+.step-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 4px; }
 .prose blockquote { margin: 1em 0; padding: 0.4em 1em; border-left: 3px solid var(--accent); background: var(--surface-2); border-radius: 0 8px 8px 0; color: var(--text-2); }
 .prose [data-table-wrap] { overflow-x: auto; margin: 1em 0; border: 1px solid var(--border); border-radius: 10px; }
 .prose table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }

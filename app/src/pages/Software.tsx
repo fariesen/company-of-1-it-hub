@@ -110,7 +110,7 @@ export function Software() {
                 return (
                   <tr key={s.name}>
                     <td>
-                      {s.name}
+                      {s.standard?.id ? <Link to={`/hub/software/${encodeURIComponent(s.standard.id)}`}>{s.name}</Link> : s.name}
                       {s.standard && (
                         <div className="row" style={{ gap: 4, marginTop: 4 }}>
                           <Badge tone="accent">Catalog{s.standard.targetVersion ? ` · approved ${s.standard.targetVersion}` : ''}</Badge>

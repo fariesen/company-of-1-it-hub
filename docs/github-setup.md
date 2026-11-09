@@ -1,6 +1,6 @@
 # GitHub setup
 
-Version 0.1 · 2026-11-06 · Status: steps documented · public repository NOT CREATED (REQUIRES APPROVAL)
+Version 0.2 · 2026-11-09 · Status: IMPLEMENTED: public repository fariesen/company-of-1-it-hub created 2026-11-06 (first push 16:23 UTC); the steps below are kept as the record of how it was set up
 
 Legend: **[Owner]** = manual action by the repository owner · **[Auto]** = done by workflows.
 
